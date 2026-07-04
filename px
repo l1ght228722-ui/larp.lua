@@ -1,18 +1,31 @@
 local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+
+local surfKey = Enum.KeyCode.E -- Taste zum Surfen
+local isSurfing = false
+local surfConnection = nil
+
+-- Warte auf Charakter
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+local character = getCharacter()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
-local surfKey = Enum.KeyCode.E -- Ändere dies zu deiner gewünschten Taste
-local isSurfing = false
-local surfConnection = nil
-local lastNormal = Vector3.new(0, 1, 0)
-
+-- Raycast für Wandnormalen (modern)
 local function getWallNormal()
-    local ray = Ray.new(rootPart.Position, rootPart.CFrame.LookVector * 3)
-    local hit, position, normal = workspace:FindPartOnRay(ray, character)
-    if hit and normal then
-        return normal
+    local origin = rootPart.Position
+    local direction = rootPart.CFrame.LookVector * 3
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {character}
+    
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    if result and result.Normal then
+        return result.Normal
     end
     return nil
 end
@@ -27,55 +40,52 @@ local function onHeartbeat(dt)
         return
     end
     
-    lastNormal = wallNormal
-    
-    -- Bewegung entlang der Wand
-    local moveDirection = Vector3.new()
+    -- Bewegungseingabe (WASD)
+    local moveDir = Vector3.new()
     if userInputService:IsKeyDown(Enum.KeyCode.W) then
-        moveDirection = moveDirection + rootPart.CFrame.LookVector
+        moveDir += rootPart.CFrame.LookVector
     end
     if userInputService:IsKeyDown(Enum.KeyCode.S) then
-        moveDirection = moveDirection - rootPart.CFrame.LookVector
+        moveDir -= rootPart.CFrame.LookVector
     end
     if userInputService:IsKeyDown(Enum.KeyCode.A) then
-        moveDirection = moveDirection - rootPart.CFrame.RightVector
+        moveDir -= rootPart.CFrame.RightVector
     end
     if userInputService:IsKeyDown(Enum.KeyCode.D) then
-        moveDirection = moveDirection + rootPart.CFrame.RightVector
+        moveDir += rootPart.CFrame.RightVector
     end
     
-    -- Projektion auf die Wandoberfläche
-    local surfDirection = moveDirection - wallNormal * moveDirection:Dot(wallNormal)
-    if surfDirection.Magnitude > 0.1 then
-        surfDirection = surfDirection.Unit * 50 -- Surfgeschwindigkeit
-        rootPart.Velocity = Vector3.new(surfDirection.X, rootPart.Velocity.Y, surfDirection.Z)
+    -- Bewegung entlang der Wandoberfläche
+    local surfDir = moveDir - wallNormal * moveDir:Dot(wallNormal)
+    if surfDir.Magnitude > 0.1 then
+        surfDir = surfDir.Unit * 50
+        rootPart.Velocity = Vector3.new(surfDir.X, rootPart.Velocity.Y, surfDir.Z)
     end
     
-    -- An der Wand halten (Gravity ausgleichen)
-    local gravityForce = Vector3.new(0, -196.2, 0) -- Roblox Gravity
-    local wallForce = wallNormal * -gravityForce:Dot(wallNormal)
-    rootPart.Velocity = rootPart.Velocity + wallForce * dt
+    -- An der Wand kleben (Gravitationskomponente entlang der Normalen ausgleichen)
+    local gravity = Vector3.new(0, -196.2, 0)
+    local wallForce = wallNormal * -gravity:Dot(wallNormal)
+    rootPart.Velocity += wallForce * dt
     
     humanoid.WalkSpeed = 0
 end
 
-local userInputService = game:GetService("UserInputService")
-
+-- Tastendruck startet Surfen
 userInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == surfKey then
+    if input.KeyCode == surfKey and not isSurfing then
         local wallNormal = getWallNormal()
         if wallNormal then
             isSurfing = true
-            lastNormal = wallNormal
-            surfConnection = game:GetService("RunService").Heartbeat:Connect(onHeartbeat)
+            surfConnection = runService.Heartbeat:Connect(onHeartbeat)
         end
     end
 end)
 
+-- Loslassen beendet Surfen
 userInputService.InputEnded:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == surfKey then
+    if input.KeyCode == surfKey and isSurfing then
         isSurfing = false
         if surfConnection then
             surfConnection:Disconnect()
