@@ -1,0 +1,86 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+local surfKey = Enum.KeyCode.E -- Ändere dies zu deiner gewünschten Taste
+local isSurfing = false
+local surfConnection = nil
+local lastNormal = Vector3.new(0, 1, 0)
+
+local function getWallNormal()
+    local ray = Ray.new(rootPart.Position, rootPart.CFrame.LookVector * 3)
+    local hit, position, normal = workspace:FindPartOnRay(ray, character)
+    if hit and normal then
+        return normal
+    end
+    return nil
+end
+
+local function onHeartbeat(dt)
+    if not isSurfing then return end
+    
+    local wallNormal = getWallNormal()
+    if not wallNormal then
+        isSurfing = false
+        humanoid.WalkSpeed = 16
+        return
+    end
+    
+    lastNormal = wallNormal
+    
+    -- Bewegung entlang der Wand
+    local moveDirection = Vector3.new()
+    if userInputService:IsKeyDown(Enum.KeyCode.W) then
+        moveDirection = moveDirection + rootPart.CFrame.LookVector
+    end
+    if userInputService:IsKeyDown(Enum.KeyCode.S) then
+        moveDirection = moveDirection - rootPart.CFrame.LookVector
+    end
+    if userInputService:IsKeyDown(Enum.KeyCode.A) then
+        moveDirection = moveDirection - rootPart.CFrame.RightVector
+    end
+    if userInputService:IsKeyDown(Enum.KeyCode.D) then
+        moveDirection = moveDirection + rootPart.CFrame.RightVector
+    end
+    
+    -- Projektion auf die Wandoberfläche
+    local surfDirection = moveDirection - wallNormal * moveDirection:Dot(wallNormal)
+    if surfDirection.Magnitude > 0.1 then
+        surfDirection = surfDirection.Unit * 50 -- Surfgeschwindigkeit
+        rootPart.Velocity = Vector3.new(surfDirection.X, rootPart.Velocity.Y, surfDirection.Z)
+    end
+    
+    -- An der Wand halten (Gravity ausgleichen)
+    local gravityForce = Vector3.new(0, -196.2, 0) -- Roblox Gravity
+    local wallForce = wallNormal * -gravityForce:Dot(wallNormal)
+    rootPart.Velocity = rootPart.Velocity + wallForce * dt
+    
+    humanoid.WalkSpeed = 0
+end
+
+local userInputService = game:GetService("UserInputService")
+
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == surfKey then
+        local wallNormal = getWallNormal()
+        if wallNormal then
+            isSurfing = true
+            lastNormal = wallNormal
+            surfConnection = game:GetService("RunService").Heartbeat:Connect(onHeartbeat)
+        end
+    end
+end)
+
+userInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == surfKey then
+        isSurfing = false
+        if surfConnection then
+            surfConnection:Disconnect()
+            surfConnection = nil
+        end
+        humanoid.WalkSpeed = 16
+    end
+end)
