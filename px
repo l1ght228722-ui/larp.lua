@@ -1,3 +1,5 @@
+print("loaded ab87.lua")
+
 local obj = Drawing.new("Square")
 obj.Position = Vector2.new(100, 100)
 obj.Size = Vector2.new(650, 500)
