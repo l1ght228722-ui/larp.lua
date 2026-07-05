@@ -1,4 +1,4 @@
-print("loaded ab87.lua")
+print("loaded leckmeinei.lua")
 
 local obj = Drawing.new("Square")
 obj.Position = Vector2.new(100, 100)
