@@ -1,96 +1,90 @@
-local player = game.Players.LocalPlayer
-local userInputService = game:GetService("UserInputService")
-local runService = game:GetService("RunService")
+local obj = Drawing.new("Square")
+obj.Position = Vector2.new(100, 100)
+obj.Size = Vector2.new(650, 500)
+obj.Color = Color3.fromRGB(5, 5, 5)
+obj.Corner = 5
+obj.Filled = true
+obj.Visible = true
 
-local surfKey = Enum.KeyCode.E -- Taste zum Surfen
-local isSurfing = false
-local surfConnection = nil
+local obj2 = Drawing.new("Square")
+obj2.Position = Vector2.new(256, 155)
+obj2.Size = Vector2.new(489, 440)
+obj2.Color = Color3.fromRGB(255, 255, 255)
+obj2.Transparency = 0.5
+obj2.Thickness = 1
+obj2.Corner = 5
+obj2.Filled = false
+obj2.Visible = true
 
--- Warte auf Charakter
-local function getCharacter()
-    return player.Character or player.CharacterAdded:Wait()
-end
+local obj3 = Drawing.new("Square")
+obj3.Position = Vector2.new(105, 105)
+obj3.Size = Vector2.new(640, 42)
+obj3.Color = Color3.fromRGB(255, 255, 255)
+obj3.Transparency = 0.5
+obj3.Corner = 5
+obj3.Filled = false
+obj3.Visible = true
 
-local character = getCharacter()
-local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Raycast für Wandnormalen (modern)
-local function getWallNormal()
-    local origin = rootPart.Position
-    local direction = rootPart.CFrame.LookVector * 3
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {character}
-    
-    local result = workspace:Raycast(origin, direction, raycastParams)
-    if result and result.Normal then
-        return result.Normal
-    end
-    return nil
-end
+local obj4 = Drawing.new("Square")
+obj4.Position = Vector2.new(105, 155)
+obj4.Size = Vector2.new(142, 440)
+obj4.Color = Color3.fromRGB(255, 255, 255)
+obj4.Transparency = 0.5
+obj4.Corner = 5
+obj4.Filled = false
+obj4.Visible = true
 
-local function onHeartbeat(dt)
-    if not isSurfing then return end
-    
-    local wallNormal = getWallNormal()
-    if not wallNormal then
-        isSurfing = false
-        humanoid.WalkSpeed = 16
-        return
-    end
-    
-    -- Bewegungseingabe (WASD)
-    local moveDir = Vector3.new()
-    if userInputService:IsKeyDown(Enum.KeyCode.W) then
-        moveDir += rootPart.CFrame.LookVector
-    end
-    if userInputService:IsKeyDown(Enum.KeyCode.S) then
-        moveDir -= rootPart.CFrame.LookVector
-    end
-    if userInputService:IsKeyDown(Enum.KeyCode.A) then
-        moveDir -= rootPart.CFrame.RightVector
-    end
-    if userInputService:IsKeyDown(Enum.KeyCode.D) then
-        moveDir += rootPart.CFrame.RightVector
-    end
-    
-    -- Bewegung entlang der Wandoberfläche
-    local surfDir = moveDir - wallNormal * moveDir:Dot(wallNormal)
-    if surfDir.Magnitude > 0.1 then
-        surfDir = surfDir.Unit * 50
-        rootPart.Velocity = Vector3.new(surfDir.X, rootPart.Velocity.Y, surfDir.Z)
-    end
-    
-    -- An der Wand kleben (Gravitationskomponente entlang der Normalen ausgleichen)
-    local gravity = Vector3.new(0, -196.2, 0)
-    local wallForce = wallNormal * -gravity:Dot(wallNormal)
-    rootPart.Velocity += wallForce * dt
-    
-    humanoid.WalkSpeed = 0
-end
+local text = Drawing.new("Text")
+text.Text = "placeholder"
+text.Font = Drawing.Fonts.System
+text.Position = Vector2.new(115, 115) 
+text.Color = Color3.fromRGB(255, 255, 255)
+text.Size = 20
+text.Visible = true
 
--- Tastendruck startet Surfen
-userInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == surfKey and not isSurfing then
-        local wallNormal = getWallNormal()
-        if wallNormal then
-            isSurfing = true
-            surfConnection = runService.Heartbeat:Connect(onHeartbeat)
-        end
-    end
-end)
+local text2 = Drawing.new("Text")
+--text2.Text = "[dev]"
+text2.Font = Drawing.Fonts.System
+text2.Position = Vector2.new(170, 115) 
+text2.Color = Color3.fromRGB(255, 255, 255)
+text2.Size = 15
+text2.Visible = true
 
--- Loslassen beendet Surfen
-userInputService.InputEnded:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == surfKey and isSurfing then
-        isSurfing = false
-        if surfConnection then
-            surfConnection:Disconnect()
-            surfConnection = nil
-        end
-        humanoid.WalkSpeed = 16
-    end
-end)
+local line = Drawing.new("Square")
+line.Position = Vector2.new(250, 152)
+line.Size = Vector2.new(2,448)
+line.Color = Color3.fromRGB(255,255,255)
+line.Transparency = 0.8
+line.Filled = true
+line.Visible = true
+
+local line2 = Drawing.new("Square")
+line2.Position = Vector2.new(100, 150)
+line2.Size = Vector2.new(650, 2)
+line2.Color = Color3.fromRGB(255,255,255)
+line2.Transparency = 0.8
+line2.Filled = true
+line2.Visible = true
+
+local line3 = Drawing.new("Square")
+line3.Position = Vector2.new(100, 100)
+line3.Size = Vector2.new(650, 500)
+line3.Color = Color3.fromRGB(255,255,255)
+line3.Transparency = 1
+line3.Thickness = 1
+line3.Corner = 5
+line3.Filled = false
+line3.Visible = true
+
+
+
+
+
+--wait(3)
+--obj:Remove()
+--obj2:Remove()
+--text:Remove()
+--text2:Remove()
+--line:Remove()
+--line2:Remove()
